@@ -1,0 +1,148 @@
+// lib/screens/common/attendance_tracking_screen.dart
+// ignore_for_file: library_private_types_in_public_api
+
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../services/attendance_service.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+class AttendanceTrackingScreen extends StatefulWidget {
+  const AttendanceTrackingScreen({super.key});
+
+  @override
+  _AttendanceTrackingScreenState createState() => _AttendanceTrackingScreenState();
+}
+
+class _AttendanceTrackingScreenState extends State<AttendanceTrackingScreen> {
+  bool isClockedIn = false;
+  DateTime? clockInTime;
+  String elapsedTime = '00:00:00';
+  Timer? timer;
+
+  @override
+  void dispose() {
+    timer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _toggleClockInOut() async {
+    final attendanceService = Provider.of<AttendanceService>(context, listen: false);
+    Position? position = await _determinePosition();
+    if (position == null) {
+      _showSnackBar('Location permissions are denied or not available.');
+      return;
+    }
+
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+
+    if (!isClockedIn) {
+      // Clock In
+      String? error = await attendanceService.clockIn(DateTime.now(), position, userId);
+      if (error != null) {
+        _showSnackBar(error);
+        return;
+      }
+      setState(() {
+        isClockedIn = true;
+        clockInTime = DateTime.now();
+        _startTimer();
+      });
+      _showSnackBar('Successfully clocked in.');
+    } else {
+      // Clock Out
+      String? error = await attendanceService.clockOut(DateTime.now(), position, userId);
+      if (error != null) {
+        _showSnackBar(error);
+        return;
+      }
+      setState(() {
+        isClockedIn = false;
+        timer?.cancel();
+        elapsedTime = '00:00:00';
+      });
+      _showSnackBar('Successfully clocked out.');
+    }
+  }
+
+  Future<Position?> _determinePosition() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      _showSnackBar('Please enable location services.');
+      return null;
+    }
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.deniedForever) {
+      _showSnackBar('Location permissions are permanently denied.');
+      return null;
+    }
+
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission != LocationPermission.whileInUse &&
+          permission != LocationPermission.always) {
+        _showSnackBar('Location permissions are denied.');
+        return null;
+      }
+    }
+    return await Geolocator.getCurrentPosition();
+  }
+
+  void _startTimer() {
+    timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      final duration = DateTime.now().difference(clockInTime!);
+      setState(() {
+        elapsedTime = _formatDuration(duration);
+      });
+    });
+  }
+
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final hours = twoDigits(duration.inHours);
+    final minutes = twoDigits(duration.inMinutes.remainder(60));
+    final seconds = twoDigits(duration.inSeconds.remainder(60));
+    return '$hours:$minutes:$seconds';
+  }
+
+  void _showSnackBar(String message) {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Attendance Tracking'),
+        backgroundColor: Colors.deepPurple,
+      ),
+      body: Center(
+        child: ElevatedButton(
+          onPressed: _toggleClockInOut,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.white,
+            elevation: 4,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          ),
+          child: Text(
+            isClockedIn ? 'Clock Out ($elapsedTime)' : 'Clock In',
+            style: TextStyle(
+              color: isClockedIn ? Colors.red.shade600 : Colors.green.shade600,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

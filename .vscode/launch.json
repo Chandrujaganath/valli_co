@@ -1,0 +1,10 @@
+{
+    "configurations": [
+        {
+            "name": "z_emp (Flutter)",
+            "program": "lib/main.dart",
+            "request": "launch",
+            "type": "dart"
+        }
+    ]
+}

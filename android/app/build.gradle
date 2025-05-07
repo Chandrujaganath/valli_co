@@ -1,0 +1,70 @@
+plugins {
+    id("com.android.application") version "8.2.1"
+    // START: FlutterFire Configuration
+    id 'com.google.gms.google-services'
+    // END: FlutterFire Configuration
+    id "kotlin-android"
+    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+    id "dev.flutter.flutter-gradle-plugin"
+}
+
+android {
+    namespace = "com.zenn.Vallico"
+    compileSdk = flutter.compileSdkVersion
+    ndkVersion = flutter.ndkVersion
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+        coreLibraryDesugaringEnabled true
+    }
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_1_8
+    }
+
+    defaultConfig {
+        applicationId = "com.zenn.Vallico"
+        minSdk = 24
+        targetSdk = 34
+        versionCode 3
+        versionName "1.2.0"
+    }
+
+    signingConfigs {
+        release {
+            storeFile file("C:\\Users\\CHANDRU J\\z_emp-main\\android\\app\\keystore\\my-release-key.jks")
+            storePassword "123456"
+            keyAlias "mykey"
+            keyPassword "123456"
+        }
+    }
+
+    buildTypes {
+        release {
+            // <--- REFERENCE THE RELEASE CONFIG
+            signingConfig signingConfigs.release
+
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            minifyEnabled false
+            shrinkResources false
+        }
+    }
+}
+dependencies {
+    implementation(platform("com.google.firebase:firebase-bom:32.2.3"))
+    // Add the App Check dependency using SafetyNet
+    implementation("com.google.firebase:firebase-appcheck-playintegrity")
+    // Add your other Firebase dependencies as needed
+    // For example:
+    // implementation("com.google.firebase:firebase-auth")
+    // implementation("com.google.firebase:firebase-firestore")
+    coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:2.0.3"
+}
+
+flutter {
+    source = "../.."
+}
