@@ -1,5 +1,5 @@
-name: z_emp
-description: "A new Flutter project."
+name: valli_and_co
+description: "Employee management system for Valli & Co."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -97,6 +97,10 @@ dependencies:
   pdf: ^3.11.2
   share_plus: ^10.1.4
   shared_preferences: ^2.2.2
+  device_info_plus: ^11.4.0  # For device information in audit logs
+  email_validator: ^3.0.0
+  flutter_slidable: ^4.0.0
+  flutter_animate: ^4.5.2
 
 dev_dependencies:
   flutter_test:
